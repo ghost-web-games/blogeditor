@@ -1,3 +1,3 @@
-let NAME = 'TARUN LALWANI';
+let NAME = 'Tech Editor';
 
 export default NAME;
