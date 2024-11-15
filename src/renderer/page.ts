@@ -1,3 +1,7 @@
+export interface IPage {
+    Run(): Promise<boolean>
+    Release(): void
+}
 
 export class Page {
     page?: string
