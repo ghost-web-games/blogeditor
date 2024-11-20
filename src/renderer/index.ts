@@ -1,19 +1,18 @@
 import { IPage } from './page';
-import { Main } from './pages/main';
+import { Factory } from './web/wfactory'
 
 declare global {
   interface Window {
     ClickLoadPage: (key: string, from: boolean, ...arg: string[]) => void;
   }
 }
-type FuncMap = {
+export type FuncMap = {
   [key: string]: IPage
 }
+const factory = new Factory()
 
 class Index {
-  funcMap: FuncMap = {
-    "main": new Main()
-  }
+  funcMap: FuncMap = factory.Build()
   CurrentPage?: IPage
   beforPage: string = ""
 
@@ -41,6 +40,16 @@ class Index {
       if (this.CurrentPage != undefined) {
         await this.CurrentPage.Run();
       }
+      
+      const dom = document.getElementById("status-msg")
+      if (!dom) return
+
+      factory.socket.RegisterMsgHandler("open", () => {
+        dom.innerText = "Connect"
+      })
+      factory.socket.RegisterMsgHandler("close", () => {
+        dom.innerText = "Disconnect"
+      })
     };
   }
   getPageIdParam() {
@@ -67,6 +76,35 @@ class Index {
     }
   }
 }
+window.addEventListener("unhandledrejection", (ev) => {
+  console.log(ev)
+  errPrint(ev.reason.message + ev.reason.stack)
+})
+window.onerror = function (message, source, lineno, colno, error) {
+  const errorMessage = `Error: ${message} at ${source}:${lineno}:${colno}\n${error?.message}\n${error?.stack}`;
+  errPrint(errorMessage)
+  // 에러 로그를 콘솔에도 출력
+  console.error(message, source, lineno, colno, error);
+  // true를 반환하여 기본 동작을 방지할 수 있음
+  return true;
+};
+
+function errPrint(msg: string) {
+  // 웹 페이지에 에러 메시지 추가
+  const errorDiv = document.createElement('div');
+  errorDiv.style.position = 'fixed';
+  errorDiv.style.top = '0';
+  errorDiv.style.left = '0';
+  errorDiv.style.width = '100%';
+  errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+  errorDiv.style.color = 'white';
+  errorDiv.style.padding = '10px';
+  errorDiv.style.zIndex = '1000';
+  errorDiv.innerText = msg;
+
+  document.body.appendChild(errorDiv);
+}
+
 
 const main = new Index()
 

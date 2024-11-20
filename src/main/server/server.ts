@@ -2,13 +2,17 @@ import { MainProcess } from "../index"
 import fs from 'fs'
 import http from 'http'
 import { WebSocketServer } from 'ws'
-import { Handler, C2SMsg } from "./socket"
+import { Handler, C2SMsg } from "../../common/com"
 import { Mime } from "mime"
 import path from "path"
+import FileManager from './filemanager'
+import { StoreData } from "../../common/common"
 
 const mime = new Mime()
+const port = 8020
 
 export class Server implements MainProcess {
+    fileMgr = new FileManager("./posts")
     server = http.createServer(function (
         req: http.IncomingMessage, res: http.ServerResponse) {
             let url = req.url
@@ -27,12 +31,34 @@ export class Server implements MainProcess {
                 res.end()
             }
         })
-    port = 8020
+    postfiles: string[] = []
+    posts: StoreData[] = []
+    async LoadFiles() {
+        this.postfiles = await this.fileMgr.listFiles()
+        console.log(this.postfiles)
+        this.posts.length = 0
+        this.postfiles.forEach(async (f) => {
+            const data= await this.fileMgr.readFile<StoreData>(f)
+            console.log("Title: ", data.title)
+            this.posts.push(data)
+        })
+    }
     OnCreate(): void {
-        const wss = new WebSocketServer({ port: this.port + 1 })
+        const wss = new WebSocketServer({ port: port + 1 })
         const g_handler: Handler = {
-            "test" : () =>{
-
+            "savePost": async (ws: any, data: StoreData) => {
+                try {
+                    data.id = `${Date.now()}_${this.postfiles.length + 1}`
+                    await this.fileMgr.saveFile(`${data.id}.json`, data)
+                    this.LoadFiles()
+                } catch (err) {
+                    ws.send(JSON.stringify({ types: "saveResult", params: false }));
+                }
+                ws.send(JSON.stringify({ types: "saveResult", params: true }));
+            },
+            "getPostList": (ws: any) => {
+                console.log("getPostList", this.posts)
+                ws.send(JSON.stringify({ types: "PostList", params: this.posts }));
             }
         }
         wss.on("connection", (ws: any) => {
@@ -48,9 +74,9 @@ export class Server implements MainProcess {
                 console.log("error occurred")
             }
         })
-        
+        this.LoadFiles()
     }
     OnRun(): void {
-        this.server.listen(this.port)
+        this.server.listen(port)
     }
 }

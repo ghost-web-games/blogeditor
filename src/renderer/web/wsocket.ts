@@ -8,11 +8,12 @@ export class Socket {
     m_handler: Handler;
     
     public constructor() {
-        this.m_ws = new WebSocket(`ws://${window.location.hostname}:8091`);
+        this.m_ws = new WebSocket(`ws://${window.location.hostname}:8021`);
         this.m_opend = false;
         this.m_handler = {};
 
         this.m_ws.onopen = () => {
+            this.m_handler["open"]?.();
             this.m_opend = true;
             this.m_ws.onmessage = (evt) => {
                 const msg: S2CMsg = JSON.parse(evt.data);
@@ -26,9 +27,12 @@ export class Socket {
                 }
                 this.m_handler[msg.types](msg.params);
             }
+            this.waitQ.forEach((m) => {
+                this.SendMsg(m.eventName, ...m.params)
+            })
         };
         this.m_ws.onclose = () => {
-            this.m_handler["close"]();
+            this.m_handler["close"]?.();
         }
     }
 
@@ -37,8 +41,14 @@ export class Socket {
             callback(params);
         }
     }
+    waitQ: { eventName: string, params: any[] }[] = []
 
     public SendMsg(eventName: string, ...params: any[]) {
+        if(!this.m_opend) {
+            this.waitQ.push({ eventName: eventName, params: params })
+            return
+        }
+        
         const msg: C2SMsg = {
             types: eventName,
             params: [...params],
