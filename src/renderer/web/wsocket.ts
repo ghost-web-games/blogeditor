@@ -2,7 +2,7 @@ export type Handler = { [key: string]: Function }
 export type S2CMsg = { types: string, params: any }
 export type C2SMsg = { types: string, params: any[] }
 
-export class Socket {
+export default class Socket {
     m_opend: boolean;
     m_ws: WebSocket;
     m_handler: Handler;

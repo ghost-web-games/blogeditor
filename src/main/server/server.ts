@@ -6,7 +6,7 @@ import { Handler, C2SMsg } from "../../common/com"
 import { Mime } from "mime"
 import path from "path"
 import FileManager from './filemanager'
-import { StoreData } from "../../common/common"
+import { CategoryTree, StoreData } from "../../common/common"
 
 const mime = new Mime()
 const port = 8020
@@ -33,6 +33,7 @@ export class Server implements MainProcess {
         })
     postfiles: string[] = []
     posts: StoreData[] = []
+    categoryRoot?: CategoryTree
     async LoadFiles() {
         this.postfiles = await this.fileMgr.listFiles()
         console.log(this.postfiles)
@@ -56,9 +57,30 @@ export class Server implements MainProcess {
                 }
                 ws.send(JSON.stringify({ types: "saveResult", params: true }));
             },
+            "modifyPost": async (ws: any, data: StoreData) => {
+                try {
+                    const filename = `${data.id}.json`
+                    if(await this.fileMgr.fileExists(filename)) {
+                        await this.fileMgr.saveFile(`${data.id}.json`, data)
+                    } else {
+                        throw new Error("not exist file: " + filename);
+                    }
+                    this.LoadFiles()
+                } catch (err) {
+                    ws.send(JSON.stringify({ types: "saveResult", params: false }));
+                }
+                ws.send(JSON.stringify({ types: "saveResult", params: true }));
+            },
             "getPostList": (ws: any) => {
-                console.log("getPostList", this.posts)
                 ws.send(JSON.stringify({ types: "PostList", params: this.posts }));
+            },
+            "getcategorytree": (ws: any) => {
+                if(this.categoryRoot)
+                    ws.send(JSON.stringify({ types: "categorytree", params: this.categoryRoot }));
+            },
+            "setcategorytree": (ws: any, category: CategoryTree) => {
+                this.categoryRoot = category
+                ws.send(JSON.stringify({ types: "categorytree", params: this.categoryRoot }));
             }
         }
         wss.on("connection", (ws: any) => {

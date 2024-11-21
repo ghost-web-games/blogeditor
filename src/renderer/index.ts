@@ -1,5 +1,5 @@
 import { IPage } from './page';
-import { Factory } from './web/wfactory'
+import Factory from './web/wfactory'
 
 declare global {
   interface Window {

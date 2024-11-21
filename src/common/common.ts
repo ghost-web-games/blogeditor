@@ -8,3 +8,12 @@ export type StoreData = {
     date: number
     data: string
 }
+
+export type CategoryTree = {
+    id: string
+    title: string
+    date: number
+    parentId?: string
+    children: CategoryTree[]
+    postIds: string[]
+}
