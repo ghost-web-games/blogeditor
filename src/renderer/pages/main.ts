@@ -5,12 +5,14 @@ import { IPage, Page } from "../page";
 import { Channel } from "../../common/com"
 import { CategoryTree, StoreData } from "../../common/common"
 import { GlobalData } from "../web/wfactory";
+import CategoryView from "./cateview";
 
 
 export default class Main extends Page implements IPage {
     editor?: EditorJS
+    m = new Map<string, StoreData>()
 
-    constructor(private ipc: Channel, private data: GlobalData) {
+    constructor(private ipc: Channel, private data: GlobalData, private cateView: CategoryView) {
         super("views/main.html")
         ipc.RegisterMsgHandler("saveResult", (ret: boolean) => {
             if (ret) {
@@ -23,35 +25,21 @@ export default class Main extends Page implements IPage {
             this.data.posts = ret
             this.data.posts.forEach((post) => {
                 console.log(post.title)
+                this.data.postMap.set(post.id ?? "1", post)
             })
-            this.drawPosts()
+            this.ipc.SendMsg("getcategorytree")
         })
     }
-    drawPosts() {
-        let html = ""
-        this.data.posts.forEach((post, i) => {
-            html += `<a id="post-${i}">${post.title}</a><br>`
-        })
-        const dom = document.getElementById("filelist")
-        if (dom) dom.innerHTML = html
-
-        this.data.posts.forEach((post, i) => {
-            const pdom = document.getElementById(`post-${i}`)
-            if (pdom) pdom.onclick = () => {
-                this.modifyMode(post)
-            }
-        })
-    }
+    
     StartUpdate() {
         let html = ""
-        const tmpMap = new Map<string, StoreData>()
+        this.m = new Map<string, StoreData>()
         this.data.posts.forEach((post) => {
-            tmpMap.set(post.id ?? "1", post)
+            this.m.set(post.id ?? "1", post)
         })
-        for(const node of this.data.root.children){
-            html += this.UpdateCategory(tmpMap, node, 0)
-        }
-        for (const [id, post] of tmpMap) {
+        html += this.cateView.StartUpdate()
+
+        for (const [id, post] of this.m) {
             html += `<a id="post-${id}">${post.title}</a><br>`
         }
 
@@ -65,21 +53,7 @@ export default class Main extends Page implements IPage {
             }
         })
     }
-    UpdateCategory(m: Map<string, StoreData>, node: CategoryTree, depth: number): string {
-        let html = "&nbsp;".repeat(depth)
-        html += `<a id="category-${node.id}">${node.title}</a> <a id="catedel-${node.id}">X</a><br>`
-        for(const id of node.postIds) {
-            const post = m.get(id)
-            if(!post) continue
-            html += "&nbsp;".repeat(depth + 1)
-            html += `<a id="post-${id}">${post.title}</a><br>`
-            m.delete(id)
-        }
-        for(const child of node.children){
-            html += this.UpdateCategory(m, child, depth + 1)
-        }
-        return html
-    }
+    
     modifyMode(post: StoreData) {
         const titleDom =document.getElementById("title") as HTMLInputElement
         const dom = document.getElementById("postmode")
@@ -103,8 +77,27 @@ export default class Main extends Page implements IPage {
         this.ipc.SendMsg("getPostList");
 
     }
+    InitTree() {
+        this.cateView.param = {
+            domId: "catelist",
+            nodeBeforeHtmlEvent: (node: CategoryTree, depth: number) => {
+                let html = ""
+                for (const id of node.postIds) {
+                    const post = this.m.get(id)
+                    if (!post) continue
+                    html += "&nbsp;".repeat(depth + 1)
+                    html += `<a id="post-${id}">${post.title}</a><br>`
+                    this.m.delete(id)
+                }
+                return html
+            },
+            receiveCate: () => {
+                this.StartUpdate()
+            }
+        }
+    }
     InitBinding() {
-        if (!this.editor) this.editor = new EditorJS({
+        this.editor = new EditorJS({
             autofocus: true,
             holder: "editorjs",
             tools: {
@@ -146,6 +139,7 @@ export default class Main extends Page implements IPage {
     }
     async Run(): Promise<boolean> {
         await this.LoadHtml()
+        this.InitTree()
         this.InitBinding()
 
         return false
