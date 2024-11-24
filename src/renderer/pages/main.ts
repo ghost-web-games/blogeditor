@@ -80,13 +80,13 @@ export default class Main extends Page implements IPage {
     InitTree() {
         this.cateView.param = {
             domId: "catelist",
-            nodeBeforeHtmlEvent: (node: CategoryTree, depth: number) => {
+            nodeBeforeHtmlEvent: (node: CategoryTree, _: number) => {
                 let html = ""
                 for (const id of node.postIds) {
                     const post = this.m.get(id)
                     if (!post) continue
-                    html += "&nbsp;".repeat(depth + 1)
-                    html += `<a id="post-${id}">${post.title}</a><br>`
+                    //html += "&nbsp;".repeat(depth + 1)
+                    html += `<li class="mb-1"><a id="post-${id}">${post.title}</a></li>`
                     this.m.delete(id)
                 }
                 return html

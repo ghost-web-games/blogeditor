@@ -30,6 +30,7 @@ export default class Category extends Page implements IPage {
             },
             deleteEvent: () => {
                 this.cateView.StartUpdate()
+                this.ipc.SendMsg("setcategorytree", this.data.root)
             }
         }
     }

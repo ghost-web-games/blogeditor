@@ -12,6 +12,8 @@ export type CateParam = {
 
 export default class CategoryView {
     treemap = new Map<string, CategoryTree>()
+    skinHtmlS: string = `<ul class="list-unstyled ps-0">`
+    skinHtmlE: string = `</ul>`
 
     constructor(
         private ipc: Channel, 
@@ -35,10 +37,12 @@ export default class CategoryView {
         if(!this.param.domId) throw new Error("undefined dom id");
         
         this.treemap.set(this.data.root.id, this.data.root)
-        let html = ""
+        let html = this.skinHtmlS
         for(const node of this.data.root.children){
             html += this.UpdateCategory(node, 0)
         }
+        html += this.skinHtmlE
+
         const dom = document.getElementById(this.param.domId)
         if (dom) dom.innerHTML = html
         for (const [_, node] of this.treemap) {
@@ -55,13 +59,27 @@ export default class CategoryView {
         return html
     }
     UpdateCategory(node: CategoryTree, depth: number): string {
-        let html = "&nbsp;".repeat(depth)
-        html += `<a id="category-${node.id}">${node.title}</a> <a id="catedel-${node.id}">X</a><br>`
+        const padding = "&nbsp;".repeat(depth)
+        let html = `
+        <li class="mb-1">${padding}
+        <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed"
+            data-bs-toggle="collapse" data-bs-target="#h${node.id}-collapse" aria-expanded="false">
+            ${node.title}
+        </button>
+            <a id="category-${node.id}" class="hand">O</a> <a id="catedel-${node.id}" class="hand">X</a><br>
+        <div class="collapse" id="h${node.id}-collapse">
+            <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+        `
         this.treemap.set(node.id, node)
-        html += this.param.nodeBeforeHtmlEvent?.(node, depth) ?? ""
         for(const child of node.children){
             html += this.UpdateCategory(child, depth + 1)
         }
+        html += `</ul>
+            <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                ${this.param.nodeBeforeHtmlEvent?.(node, depth) ?? ""}
+                </ul>
+                </div>
+            </il>`
         return html
     }
     AddChild(parentId: string, title: string) {

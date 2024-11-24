@@ -10,6 +10,7 @@ import { CategoryTree, StoreData } from "../../common/common"
 
 const mime = new Mime()
 const port = 8020
+const categoryFileName = "category.json"
 
 export class Server implements MainProcess {
     fileMgr = new FileManager("./posts")
@@ -43,6 +44,9 @@ export class Server implements MainProcess {
             console.log("Title: ", data.title)
             this.posts.push(data)
         })
+        if (await this.fileMgr.fileExists(categoryFileName)) {
+            this.categoryRoot = await this.fileMgr.readFile<CategoryTree>(categoryFileName)
+        }
     }
     OnCreate(): void {
         const wss = new WebSocketServer({ port: port + 1 })
@@ -78,8 +82,9 @@ export class Server implements MainProcess {
                 if(this.categoryRoot)
                     ws.send(JSON.stringify({ types: "categorytree", params: this.categoryRoot }));
             },
-            "setcategorytree": (ws: any, category: CategoryTree) => {
+            "setcategorytree": async (ws: any, category: CategoryTree) => {
                 this.categoryRoot = category
+                await this.fileMgr.saveFile(categoryFileName, category)
                 ws.send(JSON.stringify({ types: "categorytree", params: this.categoryRoot }));
             }
         }
