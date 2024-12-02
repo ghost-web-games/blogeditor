@@ -49,6 +49,7 @@ class Index {
       })
       factory.socket.RegisterMsgHandler("close", () => {
         dom.innerText = "Disconnect"
+        errPrint("Disconnected")
       })
     };
   }
