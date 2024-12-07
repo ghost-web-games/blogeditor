@@ -126,6 +126,20 @@ export class Server implements MainProcess {
                 }
                 ws.send(JSON.stringify({ types: "saveResult", params: true }));
             },
+            "deletePost": async (ws: any, data: StoreData) => {
+                try {
+                    const filename = `${data.id}.json`
+                    if (await this.fileMgr.fileExists(filename)) {
+                        await this.fileMgr.deleteFile(`${data.id}.json`)
+                    } else {
+                        throw new Error("not exist file: " + filename);
+                    }
+                    this.LoadFiles()
+                } catch (err) {
+                    ws.send(JSON.stringify({ types: "saveResult", params: false }));
+                }
+                ws.send(JSON.stringify({ types: "saveResult", params: true }));
+            },
             "getPostList": (ws: any) => {
                 ws.send(JSON.stringify({ types: "PostList", params: this.posts }));
             },

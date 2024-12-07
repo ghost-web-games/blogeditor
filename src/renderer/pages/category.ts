@@ -45,6 +45,11 @@ export default class Category extends Page implements IPage {
             this.cateView.AddChild(this.targetParent.id, name.value)
             this.ipc.SendMsg("setcategorytree", this.data.root)
         }
+        const mod = document.getElementById("modifyBtn")
+        if (mod) mod.onclick = () => {
+            this.cateView.ModifyCategory(this.targetParent.id, name.value)
+            this.ipc.SendMsg("setcategorytree", this.data.root)
+        }
     }
     async Run(): Promise<boolean> {
         await this.LoadHtml()

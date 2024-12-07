@@ -5,6 +5,7 @@ import Category from "../pages/category";
 import { CategoryTree, StoreData } from "../../common/common";
 import CategoryView from "../pages/cateview";
 import PostsMap from "../pages/postsmap";
+import RawPost from "../pages/rawpost";
 
 export type GlobalData = {
     root: CategoryTree
@@ -17,6 +18,7 @@ export default class Factory {
     main: Main
     category: Category
     postsmap: PostsMap
+    rawPost: RawPost
     data: GlobalData = {
         root: {
             id: "root",
@@ -35,6 +37,7 @@ export default class Factory {
         this.cateView = new CategoryView(this.socket, this.data, {})
         this.category = new Category(this.socket, this.data, this.cateView)
         this.postsmap = new PostsMap(this.socket, this.data, this.cateView)
+        this.rawPost = new RawPost(this.socket, this.data, this.cateView)
         this.main = new Main(this.socket, this.data, this.cateView)
     }
 
@@ -44,6 +47,7 @@ export default class Factory {
             "main": this.main,
             "category": this.category,
             "postsmap": this.postsmap,
+            "rawpost": this.rawPost,
         };
         return funcMap;
     }

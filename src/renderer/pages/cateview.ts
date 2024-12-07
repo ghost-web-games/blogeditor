@@ -95,6 +95,11 @@ export default class CategoryView {
             postIds: []
         })
     }
+    ModifyCategory(nodeId: string, title: string) {
+        const node = this.treemap.get(nodeId)
+        if (!node) return
+        node.title = title
+    }
     DelCategory(id: string) {
         const node = this.treemap.get(id)
         if (!node || !node.parentId) return

@@ -3,15 +3,12 @@ import { Channel } from "../../common/com"
 import { CategoryTree, StoreData } from "../../common/common"
 import { GlobalData } from "../web/wfactory";
 import CategoryView from "./cateview";
-import Editor from "./editor";
-import { OutputData } from "@editorjs/editorjs";
 
-export default class Main extends Page implements IPage {
-    editor = new Editor()
+export default class RawPost extends Page implements IPage {
     m = new Map<string, StoreData>()
 
     constructor(private ipc: Channel, private data: GlobalData, private cateView: CategoryView) {
-        super("views/main.html")
+        super("views/rawpost.html")
         ipc.RegisterMsgHandler("saveResult", (ret: boolean) => {
             if (ret) {
                 const out = document.getElementById("output") as HTMLDivElement
@@ -61,22 +58,20 @@ export default class Main extends Page implements IPage {
     modifyMode(post: StoreData) {
         const titleDom = document.getElementById("title") as HTMLInputElement
         const dom = document.getElementById("postmode")
+        const textarea = document.getElementById("rawPost") as HTMLTextAreaElement
+
         if (dom) dom.innerText = 'Modify Post'
         titleDom.value = post.title
-        this.editor.Render(JSON.parse(post.data))
+        textarea.value = post.data
+
 
         const out = document.getElementById("output") as HTMLDivElement
         const saveBtn = document.getElementById("saveBtn") as HTMLButtonElement
         if (saveBtn) saveBtn.onclick = () => {
-            if (!this.editor || !titleDom.value.length) return
-            out.innerText = "save"
-            post.title = titleDom.value
-            this.editor.Save((saveData: OutputData) => {
-                    const data = JSON.stringify(saveData, null, 2)
-                    out.innerText = data
-                    post.data = data
-                    this.ipc.SendMsg("modifyPost", post);
-                })
+            const data = textarea.value
+            out.innerText = data
+            post.data = data
+            this.ipc.SendMsg("modifyPost", post);
         }
         this.ipc.SendMsg("getPostList");
 
@@ -105,28 +100,11 @@ export default class Main extends Page implements IPage {
     }
 
     InitBinding() {
-        this.editor.NewEditor("editorjs", () => {
-                const editcss = document.getElementById("editorjs")
-                if (editcss) editcss.style.width = "100%"
-        })
         const saveBtn = document.getElementById("saveBtn") as HTMLButtonElement
         const out = document.getElementById("output") as HTMLDivElement
-        const titleDom = document.getElementById("title") as HTMLInputElement
         out.innerText = "new post ready"
         if (saveBtn) saveBtn.onclick = () => {
-            if (!this.editor || !titleDom.value.length) return
-
-            out.innerText = "save"
-            this.editor.Save((saveData: OutputData) => {
-                    const data = JSON.stringify(saveData, null, 2)
-                    out.innerText = data
-                    const storeData: StoreData = {
-                        title: titleDom.value,
-                        date: Date.now(),
-                        data: data
-                    }
-                    this.ipc.SendMsg("savePost", storeData);
-                })
+            out.innerText = "ChoicePost"
         }
         this.ipc.SendMsg("getPostList");
     }
