@@ -33,7 +33,21 @@ export default class CategoryView {
         return ret
     }
 
-    StartUpdate() {
+    openPostCate(id: string, node: CategoryTree, path: string[]) {
+        if (node.id != "root") {
+            const ret = node.postIds.findIndex((f) => f == id)
+            path.push(node.id)
+            if (ret >= 0) return true
+        }
+        for(const child of node.children){
+            if(this.openPostCate(id, child, path)) {
+                return true
+            }
+            path.pop()
+        }
+        return false
+    }
+    StartUpdate(openPostId?: string) {
         if(!this.param.domId) throw new Error("undefined dom id");
         
         this.treemap.set(this.data.root.id, this.data.root)
@@ -56,13 +70,21 @@ export default class CategoryView {
                 this.param.deleteEvent?.(node.id)
             }
         }
+        if (openPostId) {
+            const paths: string[] = []
+            this.openPostCate(openPostId, this.data.root, paths)
+            paths.forEach((path) => {
+                const dom = document.getElementById(`btn-${path}`)
+                if (dom) dom.click()
+            })
+        }
         return html
     }
     UpdateCategory(node: CategoryTree, depth: number): string {
         const padding = "&nbsp;".repeat(depth)
         let html = `
         <li class="mb-1">${padding}
-        <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed"
+        <button id="btn-${node.id}" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed"
             data-bs-toggle="collapse" data-bs-target="#h${node.id}-collapse" aria-expanded="false">
             ${node.title}
         </button>

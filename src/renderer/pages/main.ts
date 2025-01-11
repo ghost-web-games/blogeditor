@@ -9,6 +9,7 @@ import { OutputData } from "@editorjs/editorjs";
 export default class Main extends Page implements IPage {
     editor = new Editor()
     m = new Map<string, StoreData>()
+    currentPostId?: string
 
     constructor(private ipc: Channel, private data: GlobalData, private cateView: CategoryView) {
         super("views/main.html")
@@ -30,23 +31,21 @@ export default class Main extends Page implements IPage {
     }
 
     StartUpdate() {
-        let html = ""
         this.m = new Map<string, StoreData>()
         this.data.posts.forEach((post) => {
             this.m.set(post.id ?? "1", post)
         })
-        html += this.cateView.StartUpdate()
+        this.cateView.StartUpdate(this.currentPostId)
 
+        const dom = document.getElementById("catelist")
         for (const [id, post] of this.m) {
-            html += `<a id="post-${id}">${post.title}</a> <a id="post-del-${id}">X</a><br>`
+            if (dom) dom.innerHTML += `<a id="post-${id}">${post.title}</a> <a id="post-del-${id}">X</a><br>`
         }
-
-        const dom = document.getElementById("filelist")
-        if (dom) dom.innerHTML = html
 
         this.data.posts.forEach((post) => {
             const pdom = document.getElementById(`post-${post.id}`)
             if (pdom) pdom.onclick = () => {
+                this.currentPostId = post.id
                 this.modifyMode(post)
             }
             const ddom = document.getElementById(`post-del-${post.id}`)
